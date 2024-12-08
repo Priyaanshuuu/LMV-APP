@@ -2,12 +2,11 @@ import { User } from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/generateTokens.js";
 
-// Register Controller
 export const register = async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // Validate required fields
+        
         if (!name || !email || !password || typeof password !== "string") {
             return res.status(400).json({
                 success: false,
@@ -15,7 +14,7 @@ export const register = async (req, res) => {
             });
         }
 
-        // Check if the email already exists
+        
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
@@ -24,10 +23,10 @@ export const register = async (req, res) => {
             });
         }
 
-        // Hash the password
+        
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create a new user
+    
         const newUser = await User.create({
             name,
             email,
@@ -54,12 +53,10 @@ export const register = async (req, res) => {
 };
 
 
-// Login Controller
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validate required fields
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
@@ -67,7 +64,6 @@ export const login = async (req, res) => {
             });
         }
 
-        // Check if the user exists
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({
@@ -76,7 +72,6 @@ export const login = async (req, res) => {
             });
         }
 
-        // Verify the password
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) {
             return res.status(400).json({
@@ -85,9 +80,10 @@ export const login = async (req, res) => {
             });
         }
 
-        // Generate and send a token
-        generateToken(res, user, `Welcome back ${user.name}`);
+        // Generate token and set cookie
+        generateToken(res, user);
 
+        // Send success response
         return res.status(200).json({
             success: true,
             message: `Welcome back, ${user.name}`,
@@ -100,10 +96,13 @@ export const login = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in login controller:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to login",
-            error: error.message,
-        });
+        if (!res.headersSent) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to login",
+                error: error.message,
+            });
+        }
     }
 };
+
